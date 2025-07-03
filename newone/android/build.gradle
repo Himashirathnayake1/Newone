@@ -1,7 +1,25 @@
+// android/build.gradle
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.0.0' // or whatever version you're using
+        classpath 'com.google.gms:google-services:4.4.0' // ✅ Firebase plugin
+    }
+}
+
 allprojects {
     repositories {
         google()
         mavenCentral()
+        // Use mirrors to speed up download
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
     }
 }
 
