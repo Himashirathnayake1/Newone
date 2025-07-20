@@ -26,7 +26,6 @@ class _VocabularyQuizPageState extends State<VocabularyQuizPage> {
     try {
       QuerySnapshot snapshot =
           await FirebaseFirestore.instance.collection('vocabulary_quiz').get();
-
       final fetchedQuestions = snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return {
@@ -108,8 +107,39 @@ class _VocabularyQuizPageState extends State<VocabularyQuizPage> {
   Widget build(BuildContext context) {
     if (loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Vocabulary Quiz')),
-        body: const Center(child: CircularProgressIndicator()),
+        appBar: AppBar(
+          title: const Text('Vocabulary Quiz'),
+          backgroundColor: Colors.teal[300],
+        ),
+        body: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color.fromARGB(255, 234, 253, 227), Color.fromARGB(255, 237, 255, 225)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/reading.gif', 
+                height: 200,
+              ),
+              const SizedBox(height: 30),
+              const Text(
+                'Loading your quiz...',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.teal,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -127,74 +157,87 @@ class _VocabularyQuizPageState extends State<VocabularyQuizPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vocabulary Quiz'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Colors.teal[300],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Question ${currentQuestionIndex + 1} of ${questions.length}',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              question['question'] as String,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 30),
-            ...List.generate(options.length, (index) {
-              Color optionColor = Colors.grey.shade200;
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color.fromARGB(255, 234, 253, 227), Color.fromARGB(255, 237, 255, 225)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Question ${currentQuestionIndex + 1} of ${questions.length}',
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                question['question'] as String,
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 30),
+              ...List.generate(options.length, (index) {
+                Color optionColor = Colors.grey.shade200;
 
-              if (answered) {
-                if (index == answerIndex) {
-                  optionColor = Colors.green.shade300;
-                } else if (index == selectedOptionIndex) {
-                  optionColor = Colors.red.shade300;
+                if (answered) {
+                  if (index == answerIndex) {
+                    optionColor = Colors.green.shade300;
+                  } else if (index == selectedOptionIndex) {
+                    optionColor = Colors.red.shade300;
+                  }
                 }
-              }
 
-              return GestureDetector(
-                onTap: () => _selectOption(index),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: optionColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.deepPurple),
-                  ),
-                  child: Text(
-                    options[index],
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                ),
-              );
-            }),
-            const Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Score: $score',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                ),
-                ElevatedButton(
-                  onPressed: answered ? _nextQuestion : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                return GestureDetector(
+                  onTap: () => _selectOption(index),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 14, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: optionColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.green),
+                    ),
+                    child: Text(
+                      options[index],
+                      style: const TextStyle(fontSize: 18),
                     ),
                   ),
-                  child: const Text('Next'),
-                )
-              ],
-            )
-          ],
+                );
+              }),
+              const Spacer(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Score: $score',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w500),
+                  ),
+                  ElevatedButton(
+                    onPressed: answered ? _nextQuestion : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: const Text('Next'),
+                  )
+                ],
+              )
+            ],
+          ),
         ),
       ),
     );

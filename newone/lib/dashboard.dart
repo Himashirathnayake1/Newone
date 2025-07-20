@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:newone/dailytips.dart';
 import 'package:newone/flashcard.dart';
+import 'package:newone/motivational_vedio.dart';
 import 'package:newone/speakingpractice.dart';
+import 'package:newone/task_planner_page.dart';
 import 'package:newone/vocabulary.dart';
 import 'package:newone/writingtask.dart';
 import 'package:animate_do/animate_do.dart';
@@ -18,6 +21,22 @@ class HomeDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F8),
+       floatingActionButton: ElasticIn(
+        child: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => TaskPlannerPage()),
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Navigating to Task Management")),
+            );
+          },
+          backgroundColor: Colors.teal[600],
+          child: const Icon(Icons.task, color: Colors.white),
+          tooltip: 'Manage Tasks',
+        ),
+      ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -69,9 +88,27 @@ class HomeDashboard extends StatelessWidget {
                       FadeInUp(
                         child: Row(
                           children: [
-                            _miniCard("🔥 $streakDays-day Streak", Colors.orange[200]!, Icons.local_fire_department),
+                            _miniCard("🔥 $streakDays-day Streak", Colors.orange[200]!, Icons.local_fire_department,
+                              onTap: () {
+                               Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const MotivationalVideosPage(),
+                                  ),
+                                );
+                              },
+                            ),
                             const SizedBox(width: 16),
-                            _miniCard("💡 Daily Tip: Speak confidently!", Colors.yellow[200]!, Icons.lightbulb),
+                            _miniCard("💡 Daily Tip: Speak confidently!", Colors.yellow[200]!, Icons.lightbulb,
+                             onTap: () {
+                               Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const DailyTipPage(),
+                                  ),
+                                );
+                              },),
+                            
                           ],
                         ),
                       ),
@@ -123,7 +160,7 @@ class HomeDashboard extends StatelessWidget {
                 maxLines: 1,
               ),
               Text(
-                "Ready to master English?",
+                "Ready to mass English?",
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   color: Colors.white70,
@@ -275,7 +312,7 @@ class HomeDashboard extends StatelessWidget {
             "10-minute conversation",
             Icons.mic,
             () => Navigator.push(context, MaterialPageRoute(builder: (context) => SpeakingPracticePage())),
-            "Speaking Practice tapped!",
+            "",
           ),
         ),
         FadeInUp(
@@ -314,7 +351,6 @@ class HomeDashboard extends StatelessWidget {
       ],
     );
   }
-
   Widget _taskCard(
     BuildContext context,
     String title,
@@ -324,12 +360,7 @@ class HomeDashboard extends StatelessWidget {
     String snackBarMessage,
   ) {
     return GestureDetector(
-      onTap: () {
-        onTap();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(snackBarMessage)),
-        );
-      },
+      onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(16),
@@ -388,44 +419,48 @@ class HomeDashboard extends StatelessWidget {
       ),
     );
   }
+  }
 
-  Widget _miniCard(String text, Color bgColor, IconData icon) {
+  Widget _miniCard(String text, Color bgColor, IconData icon, {VoidCallback? onTap}) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(
-              blurRadius: 6,
-              color: Colors.black12,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.teal[800], size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                text,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.teal[800],
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(
+                blurRadius: 6,
+                color: Colors.black12,
+                offset: Offset(0, 3),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.teal[800], size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  text,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.teal[800],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-}
+
 
 class WavePainter extends CustomPainter {
   @override

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
 
 class SpeakingPracticePage extends StatefulWidget {
   @override
@@ -14,6 +15,8 @@ class _SpeakingPracticePageState extends State<SpeakingPracticePage> {
   int currentIndex = 0;
   bool isListening = false;
   String spokenText = '';
+  String feedback = '';
+  int accuracy = 0;
 
   final stt.SpeechToText _speech = stt.SpeechToText();
   final FlutterTts _flutterTts = FlutterTts();
@@ -25,7 +28,8 @@ class _SpeakingPracticePageState extends State<SpeakingPracticePage> {
   }
 
   Future<void> fetchSentences() async {
-    final snapshot = await FirebaseFirestore.instance.collection('sentences').get();
+    final snapshot =
+        await FirebaseFirestore.instance.collection('sentences').get();
     final data = snapshot.docs.map((doc) => doc['text'].toString()).toList();
     setState(() {
       sentences = data;
@@ -36,6 +40,8 @@ class _SpeakingPracticePageState extends State<SpeakingPracticePage> {
     setState(() {
       currentIndex = (currentIndex + 1) % sentences.length;
       spokenText = '';
+      feedback = '';
+      accuracy = 0;
     });
   }
 
@@ -50,35 +56,68 @@ class _SpeakingPracticePageState extends State<SpeakingPracticePage> {
   }
 
   void stopListening() {
-    setState(() => isListening = false);
     _speech.stop();
+    setState(() => isListening = false);
+
+    if (sentences.isNotEmpty && spokenText.isNotEmpty) {
+      final expected = sentences[currentIndex];
+      accuracy = calculateAccuracy(expected, spokenText);
+      feedback = feedbackMessage(accuracy);
+
+      if (accuracy < 70) {
+        _flutterTts.speak("Try again. The correct sentence is: $expected");
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Accuracy: $accuracy% — $feedback")),
+      );
+    }
   }
 
-  // Future<void> speakText(String text) async {
-  //   await _flutterTts.setLanguage("en-US");
-  //   await _flutterTts.setPitch(1.0);
-  //   await _flutterTts.speak(text);
-  // }
   Future<void> speakText(String text) async {
-  try {
-    await _flutterTts.setLanguage('en-US');
-    await _flutterTts.setPitch(0.5);
-    await _flutterTts.speak(text);
-  } catch (e) {
-    print("TTS error: $e");
+    try {
+      await _flutterTts.setLanguage('en-US');
+      await _flutterTts.setPitch(0.8);
+      await _flutterTts.setSpeechRate(0.4);
+      await _flutterTts.speak(text);
+    } catch (e) {
+      print("TTS error: $e");
+    }
   }
-}
 
+  int calculateAccuracy(String expected, String actual) {
+    expected = expected.toLowerCase().trim();
+    actual = actual.toLowerCase().trim();
+
+    int matches = 0;
+    final expectedWords = expected.split(' ');
+    final actualWords = actual.split(' ');
+
+    for (int i = 0; i < expectedWords.length; i++) {
+      if (i < actualWords.length && expectedWords[i] == actualWords[i]) {
+        matches++;
+      }
+    }
+
+    return ((matches / expectedWords.length) * 100).round();
+  }
+
+  String feedbackMessage(int accuracy) {
+    if (accuracy >= 90) return "🌟 Excellent pronunciation!";
+    if (accuracy >= 70) return "✅ Good! Try to speak clearer.";
+    return "📢 Try again, speak slowly and clearly.";
+  }
 
   @override
   Widget build(BuildContext context) {
-    final sentence = sentences.isNotEmpty ? sentences[currentIndex] : 'Loading...';
+    final sentence =
+        sentences.isNotEmpty ? sentences[currentIndex] : 'Loading...';
 
     return Scaffold(
       backgroundColor: Color(0xFFF0F4F8),
       appBar: AppBar(
         title: Text("Speaking Practice"),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Colors.teal[300],
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -88,7 +127,8 @@ class _SpeakingPracticePageState extends State<SpeakingPracticePage> {
             Container(
               padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [Colors.purple[100]!, Colors.purple[300]!]),
+                gradient: LinearGradient(
+                    colors: [Colors.green[100]!, Colors.teal[100]!]),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Center(
@@ -97,7 +137,7 @@ class _SpeakingPracticePageState extends State<SpeakingPracticePage> {
                   style: GoogleFonts.lato(
                     textStyle: TextStyle(
                       fontSize: 24,
-                      color: Colors.deepPurple[900],
+                      color: Colors.green[900],
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -113,21 +153,40 @@ class _SpeakingPracticePageState extends State<SpeakingPracticePage> {
                   onPressed: () => speakText(sentence),
                   icon: Icon(Icons.volume_up),
                   label: Text("Listen"),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color.fromARGB(255, 188, 155, 245)),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade200),
                 ),
                 ElevatedButton.icon(
                   onPressed: isListening ? stopListening : startListening,
                   icon: Icon(isListening ? Icons.stop : Icons.mic),
                   label: Text(isListening ? "Stop" : "Speak"),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+                  style:
+                      ElevatedButton.styleFrom(backgroundColor: Colors.green),
                 ),
               ],
             ),
             SizedBox(height: 20),
-            Text(
-              spokenText.isNotEmpty ? "You said: $spokenText" : "",
-              style: TextStyle(fontSize: 18, color: Colors.grey[800]),
-              textAlign: TextAlign.center,
+            if (spokenText.isNotEmpty)
+              Column(
+                children: [
+                  Text(
+                    "You said: $spokenText",
+                    style: TextStyle(fontSize: 18, color: Colors.grey[800]),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    "Accuracy: $accuracy% — $feedback",
+                    style: TextStyle(fontSize: 16, color: Colors.teal),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            SizedBox(height: 70),
+            Lottie.asset(
+              'assets/jump.json', // ✅ Add this JSON file to your assets folder
+              height: 180,
+              repeat: true,
             ),
             Spacer(),
             ElevatedButton.icon(
@@ -135,7 +194,7 @@ class _SpeakingPracticePageState extends State<SpeakingPracticePage> {
               icon: Icon(Icons.navigate_next),
               label: Text("Next Sentence"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: Colors.teal[100],
                 minimumSize: Size(double.infinity, 50),
               ),
             ),

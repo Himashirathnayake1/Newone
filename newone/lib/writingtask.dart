@@ -18,7 +18,8 @@ class _WritingTaskPageState extends State<WritingTaskPage> {
 
     if (userAnswer.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please write your answer before submitting.")),
+        const SnackBar(
+            content: Text("Please write your answer before submitting.")),
       );
       return;
     }
@@ -32,15 +33,28 @@ class _WritingTaskPageState extends State<WritingTaskPage> {
         'timestamp': Timestamp.now(),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Your answer has been submitted!")),
+      String feedback = _generateFeedback(userAnswer);
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text("✅ Feedback"),
+          content: Text(feedback),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text("OK"),
+            ),
+          ],
+        ),
       );
 
       _controller.clear();
     } catch (e) {
       print("Error saving answer: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error submitting answer. Please try again.")),
+        const SnackBar(
+            content: Text("Error submitting answer. Please try again.")),
       );
     } finally {
       setState(() => isLoading = false);
@@ -119,4 +133,29 @@ class _WritingTaskPageState extends State<WritingTaskPage> {
       ),
     );
   }
+}
+
+String _generateFeedback(String text) {
+  final wordCount = text.trim().split(RegExp(r'\s+')).length;
+  String feedback = "";
+
+  if (wordCount < 50) {
+    feedback += "📝 Try to write more. Your answer is quite short.\n\n";
+  } else {
+    feedback += "✅ Good length!\n\n";
+  }
+
+  if (text.contains(RegExp(r"\bi\b"))) {
+    feedback += "🔠 Remember to capitalize 'I'.\n";
+  }
+
+  if (!text.contains(RegExp(r"[.,!?]"))) {
+    feedback += "🧩 Try using punctuation like periods or commas.\n";
+  }
+
+  if (feedback.trim().isEmpty) {
+    feedback = "🎉 Great job! Your writing looks clean.";
+  }
+
+  return feedback;
 }

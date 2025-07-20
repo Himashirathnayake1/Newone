@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:newone/dashboard.dart';
+import 'package:newone/notification_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,11 +31,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (isLogin) {
         print("[🔐] Logging in with email: $email");
-        userCred = await _auth.signInWithEmailAndPassword(email: email, password: password);
+        userCred = await _auth.signInWithEmailAndPassword(
+            email: email, password: password);
         print("[✅] Login successful");
       } else {
-        print("[🆕] Registering user with email: $email and username: $username");
-        userCred = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+        print(
+            "[🆕] Registering user with email: $email and username: $username");
+        userCred = await _auth.createUserWithEmailAndPassword(
+            email: email, password: password);
 
         final uid = userCred.user!.uid;
         print("[📤] Saving new user data to Firestore (UID: $uid)");
@@ -84,7 +88,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       print("[❗] Unexpected error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unexpected error occurred.'), backgroundColor: Colors.red),
+        const SnackBar(
+            content: Text('Unexpected error occurred.'),
+            backgroundColor: Colors.red),
       );
     } finally {
       setState(() => isLoading = false);
@@ -105,56 +111,59 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Text(
                     isLogin ? "Welcome Back 👋" : "Create Account ✨",
-                    style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.poppins(
+                        fontSize: 28, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     isLogin
                         ? "Login to continue your journey."
                         : "Register to start learning English.",
-                    style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey[600]),
+                    style: GoogleFonts.poppins(
+                        fontSize: 16, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 30),
-
                   if (!isLogin)
                     Column(
                       children: [
                         TextFormField(
                           decoration: InputDecoration(
                             labelText: "Username",
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
                             prefixIcon: const Icon(Icons.person),
                           ),
                           onChanged: (val) => username = val.trim(),
-                          validator: (val) => val!.isEmpty ? "Enter username" : null,
+                          validator: (val) =>
+                              val!.isEmpty ? "Enter username" : null,
                         ),
                         const SizedBox(height: 20),
                       ],
                     ),
-
                   TextFormField(
                     decoration: InputDecoration(
                       labelText: "Email",
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       prefixIcon: const Icon(Icons.email),
                     ),
                     onChanged: (val) => email = val.trim(),
                     validator: (val) => val!.isEmpty ? "Enter email" : null,
                   ),
                   const SizedBox(height: 20),
-
                   TextFormField(
                     obscureText: true,
                     decoration: InputDecoration(
                       labelText: "Password",
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       prefixIcon: const Icon(Icons.lock),
                     ),
                     onChanged: (val) => password = val.trim(),
-                    validator: (val) => val!.length < 6 ? "Min 6 characters" : null,
+                    validator: (val) =>
+                        val!.length < 6 ? "Min 6 characters" : null,
                   ),
                   const SizedBox(height: 30),
-
                   ElevatedButton(
                     onPressed: isLoading
                         ? null
@@ -173,7 +182,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         : Text(isLogin ? "Login" : "Register"),
                   ),
                   const SizedBox(height: 20),
-
                   GestureDetector(
                     onTap: () {
                       setState(() {
