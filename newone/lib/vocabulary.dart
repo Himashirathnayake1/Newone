@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class VocabularyQuizPage extends StatefulWidget {
@@ -21,6 +22,17 @@ class _VocabularyQuizPageState extends State<VocabularyQuizPage> {
     super.initState();
     fetchQuestions();
   }
+Future<void> markVocabularyTaskComplete() async {
+  final uid = FirebaseAuth.instance.currentUser!.uid;
+  final today = DateTime.now().toString().substring(0, 10);
+
+  await FirebaseFirestore.instance
+      .collection('users')
+      .doc(uid)
+      .collection('progress')
+      .doc(today)
+      .set({'vocabulary': true}, SetOptions(merge: true));
+}
 
   Future<void> fetchQuestions() async {
     try {
@@ -71,6 +83,11 @@ class _VocabularyQuizPageState extends State<VocabularyQuizPage> {
       });
     } else {
       _showFinalScore();
+       if (score < questions.length) {
+      print("Try again.");
+    } else {
+      markVocabularyTaskComplete(); // ✅ Save progress
+    }
     }
   }
 
@@ -84,18 +101,19 @@ class _VocabularyQuizPageState extends State<VocabularyQuizPage> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              setState(() {
+              setState(() async {
                 currentQuestionIndex = 0;
                 score = 0;
                 selectedOptionIndex = null;
                 answered = false;
+              
               });
             },
-            child: const Text('Restart'),
+            child: const Text('Restart',style: TextStyle(color: Colors.teal),),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: const Text('Close', style: TextStyle(color: Colors.teal),),
           ),
         ],
       ),
@@ -113,14 +131,7 @@ class _VocabularyQuizPageState extends State<VocabularyQuizPage> {
         ),
         body: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color.fromARGB(255, 234, 253, 227), Color.fromARGB(255, 237, 255, 225)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
+          padding: const EdgeInsets.all(24),          
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -159,15 +170,22 @@ class _VocabularyQuizPageState extends State<VocabularyQuizPage> {
         title: const Text('Vocabulary Quiz'),
         backgroundColor: Colors.teal[300],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color.fromARGB(255, 234, 253, 227), Color.fromARGB(255, 237, 255, 225)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      body:Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/back.jpg',
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-        child: Padding(
+          Positioned.fill(
+            child: Container(
+              color: Colors.white.withOpacity(0.85),
+            ),
+          ),
+        
+        
+       Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,7 +256,7 @@ class _VocabularyQuizPageState extends State<VocabularyQuizPage> {
               )
             ],
           ),
-        ),
+        ),],
       ),
     );
   }
