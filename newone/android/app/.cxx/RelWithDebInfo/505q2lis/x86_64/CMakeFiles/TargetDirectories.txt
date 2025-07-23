@@ -1,0 +1,2 @@
+C:/Users/DELL Latitude 7290/Desktop/Bussiness/EnglishLearningApp/newone/android/app/.cxx/RelWithDebInfo/505q2lis/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/DELL Latitude 7290/Desktop/Bussiness/EnglishLearningApp/newone/android/app/.cxx/RelWithDebInfo/505q2lis/x86_64/CMakeFiles/rebuild_cache.dir
