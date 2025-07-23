@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -34,6 +35,10 @@ class _WritingTaskPageState extends State<WritingTaskPage> {
       });
 
       String feedback = _generateFeedback(userAnswer);
+      if (feedback.isEmpty) {
+        feedback = "";
+      }
+      await markWritingTaskComplete(); // ✅ Save progress
 
       showDialog(
         context: context,
@@ -60,6 +65,17 @@ class _WritingTaskPageState extends State<WritingTaskPage> {
       setState(() => isLoading = false);
     }
   }
+Future<void> markWritingTaskComplete() async {
+  final uid = FirebaseAuth.instance.currentUser!.uid;
+  final today = DateTime.now().toString().substring(0, 10);
+
+  await FirebaseFirestore.instance
+      .collection('users')
+      .doc(uid)
+      .collection('progress')
+      .doc(today)
+      .set({'writing': true}, SetOptions(merge: true));
+}
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +84,23 @@ class _WritingTaskPageState extends State<WritingTaskPage> {
         title: const Text("Writing Task"),
         backgroundColor: Colors.teal,
       ),
-      body: Padding(
+      body: Stack(
+  children: [
+    // 🌄 Background Image
+    Positioned.fill(
+      child: Image.asset(
+        'assets/back.jpg',
+        fit: BoxFit.cover,
+      ),
+    ),
+
+    // 🧼 Semi-transparent overlay
+    Positioned.fill(
+      child: Container(
+        color: Colors.white.withOpacity(0.85),
+      ),
+    ),
+      Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,7 +162,7 @@ class _WritingTaskPageState extends State<WritingTaskPage> {
             ),
           ],
         ),
-      ),
+      ),],),
     );
   }
 }
@@ -156,6 +188,5 @@ String _generateFeedback(String text) {
   if (feedback.trim().isEmpty) {
     feedback = "🎉 Great job! Your writing looks clean.";
   }
-
   return feedback;
 }
