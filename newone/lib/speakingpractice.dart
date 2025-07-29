@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -55,7 +56,7 @@ class _SpeakingPracticePageState extends State<SpeakingPracticePage> {
     }
   }
 
-  void stopListening() {
+  Future<void> stopListening() async {
     _speech.stop();
     setState(() => isListening = false);
 
@@ -63,9 +64,10 @@ class _SpeakingPracticePageState extends State<SpeakingPracticePage> {
       final expected = sentences[currentIndex];
       accuracy = calculateAccuracy(expected, spokenText);
       feedback = feedbackMessage(accuracy);
-
       if (accuracy < 70) {
         _flutterTts.speak("Try again. The correct sentence is: $expected");
+      } else {
+        markSpeakingTaskComplete(); // ✅ Save progress
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -108,6 +110,18 @@ class _SpeakingPracticePageState extends State<SpeakingPracticePage> {
     return "📢 Try again, speak slowly and clearly.";
   }
 
+  Future<void> markSpeakingTaskComplete() async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final today = DateTime.now().toString().substring(0, 10);
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('progress')
+        .doc(today)
+        .set({'speaking': true}, SetOptions(merge: true));
+  }
+
   @override
   Widget build(BuildContext context) {
     final sentence =
@@ -119,87 +133,110 @@ class _SpeakingPracticePageState extends State<SpeakingPracticePage> {
         title: Text("Speaking Practice"),
         backgroundColor: Colors.teal[300],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            SizedBox(height: 40),
-            Container(
-              padding: EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                    colors: [Colors.green[100]!, Colors.teal[100]!]),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Center(
-                child: Text(
-                  '"$sentence"',
-                  style: GoogleFonts.lato(
-                    textStyle: TextStyle(
-                      fontSize: 24,
-                      color: Colors.green[900],
-                      fontWeight: FontWeight.w600,
+      body: Stack(
+        children: [
+          // 🌄 Background Image
+          Positioned.fill(
+            child: Image.asset(
+              'assets/back.jpg',
+              fit: BoxFit.cover,
+            ),
+          ),
+
+          // 🧼 Semi-transparent overlay
+          Positioned.fill(
+            child: Container(
+              color: Colors.white.withOpacity(0.85),
+            ),
+          ),
+
+          // 🌟 Actual content
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              children: [
+                SizedBox(height: 40),
+                Container(
+                  padding: EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.green[100]!, Colors.teal[100]!],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '"$sentence"',
+                      style: GoogleFonts.lato(
+                        textStyle: TextStyle(
+                          fontSize: 24,
+                          color: Colors.green[900],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
-                  textAlign: TextAlign.center,
                 ),
-              ),
-            ),
-            SizedBox(height: 30),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
+                SizedBox(height: 30),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () => speakText(sentence),
+                      icon: Icon(Icons.volume_up),
+                      label: Text("Listen"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.shade200,
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: isListening ? stopListening : startListening,
+                      icon: Icon(isListening ? Icons.stop : Icons.mic),
+                      label: Text(isListening ? "Stop" : "Speak"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
+                if (spokenText.isNotEmpty)
+                  Column(
+                    children: [
+                      Text(
+                        "You said: $spokenText",
+                        style: TextStyle(fontSize: 18, color: Colors.grey[800]),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        "Accuracy: $accuracy% — $feedback",
+                        style: TextStyle(fontSize: 16, color: Colors.teal),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                SizedBox(height: 70),
+                Lottie.asset(
+                  'assets/jump.json',
+                  height: 180,
+                  repeat: true,
+                ),
+                Spacer(),
                 ElevatedButton.icon(
-                  onPressed: () => speakText(sentence),
-                  icon: Icon(Icons.volume_up),
-                  label: Text("Listen"),
+                  onPressed: nextSentence,
+                  icon: Icon(Icons.navigate_next),
+                  label: Text("Next Sentence"),
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade200),
-                ),
-                ElevatedButton.icon(
-                  onPressed: isListening ? stopListening : startListening,
-                  icon: Icon(isListening ? Icons.stop : Icons.mic),
-                  label: Text(isListening ? "Stop" : "Speak"),
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                    backgroundColor: Colors.teal[100],
+                    minimumSize: Size(double.infinity, 50),
+                  ),
                 ),
               ],
             ),
-            SizedBox(height: 20),
-            if (spokenText.isNotEmpty)
-              Column(
-                children: [
-                  Text(
-                    "You said: $spokenText",
-                    style: TextStyle(fontSize: 18, color: Colors.grey[800]),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    "Accuracy: $accuracy% — $feedback",
-                    style: TextStyle(fontSize: 16, color: Colors.teal),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            SizedBox(height: 70),
-            Lottie.asset(
-              'assets/jump.json', // ✅ Add this JSON file to your assets folder
-              height: 180,
-              repeat: true,
-            ),
-            Spacer(),
-            ElevatedButton.icon(
-              onPressed: nextSentence,
-              icon: Icon(Icons.navigate_next),
-              label: Text("Next Sentence"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal[100],
-                minimumSize: Size(double.infinity, 50),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
