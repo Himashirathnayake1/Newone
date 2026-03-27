@@ -7,6 +7,7 @@ import 'package:newone/flashcard.dart';
 import 'package:newone/motivational_vedio.dart';
 import 'package:newone/speakingpractice.dart';
 import 'package:newone/task_planner_page.dart';
+import 'package:newone/user_profile_page.dart';
 import 'package:newone/vocabulary.dart';
 import 'package:newone/writingtask.dart';
 import 'package:animate_do/animate_do.dart';
@@ -16,12 +17,57 @@ class HomeDashboard extends StatelessWidget {
   final String userId = FirebaseAuth.instance.currentUser!.uid;
 
   HomeDashboard({super.key});
+  Future<int> fetchCompletedToday() async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final today = DateTime.now().toString().substring(0, 10);
+
+    final snap = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('progress')
+        .doc(today)
+        .get();
+
+    if (!snap.exists) return 0;
+
+    final data = snap.data()!;
+    return data.values.where((v) => v == true).length;
+  }
+Future<Map<String, dynamic>> _loadUserAndProgress(String uid) async {
+  final userDoc =
+      await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+  final username = userDoc.data()?['username'] ?? 'User';
+
+  final today = DateTime.now().toIso8601String().split('T')[0];
+  final progressDoc = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(uid)
+      .collection('progress')
+      .doc(today)
+      .get();
+
+  int total = 0;
+  int completed = 0;
+
+  if (progressDoc.exists) {
+    final data = progressDoc.data()!;
+    total = data.length;
+    completed = data.values.where((v) => v == true).length;
+  }
+
+  return {
+    'username': username,
+    'completed': completed,
+    'total': total,
+  };
+}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F8),
-       floatingActionButton: ElasticIn(
+      floatingActionButton: ElasticIn(
         child: FloatingActionButton(
           onPressed: () {
             Navigator.push(
@@ -43,15 +89,22 @@ class HomeDashboard extends StatelessWidget {
             // Wave background
             _buildWaveBackground(),
             StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance.collection('users').doc(userId).snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(userId)
+                  .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.teal));
+                if (!snapshot.hasData || !snapshot.data!.exists) {
+                  return const Center(
+                      child: CircularProgressIndicator(color: Colors.teal));
                 }
 
                 final data = snapshot.data!.data() as Map<String, dynamic>;
                 final String userName = data['username'] ?? 'User';
-                final double progress = (data['progress'] ?? 0.0).toDouble();
+                final double progress = ((data['progress'] ?? 0.0) as num)
+                    .toDouble()
+                    .clamp(0.0, 1.0);
+
                 final int streakDays = data['streakDays'] ?? 0;
                 final int completedTasks = (data['completedTasks'] ?? 0);
 
@@ -88,27 +141,33 @@ class HomeDashboard extends StatelessWidget {
                       FadeInUp(
                         child: Row(
                           children: [
-                            _miniCard("🔥 $streakDays-day Streak", Colors.orange[200]!, Icons.local_fire_department,
+                            _miniCard(
+                              "🔥 Motivation Videos",
+                              Colors.orange[200]!,
+                              Icons.ondemand_video,
                               onTap: () {
-                               Navigator.push(
+                                Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => const MotivationalVideosPage(),
+                                    builder: (context) => MotivationVideoPage(),
                                   ),
                                 );
                               },
                             ),
                             const SizedBox(width: 16),
-                            _miniCard("💡 Daily Tip: Speak confidently!", Colors.yellow[200]!, Icons.lightbulb,
-                             onTap: () {
-                               Navigator.push(
+                            _miniCard(
+                              "💡 Daily Tip: Speak confidently!",
+                              Colors.yellow[200]!,
+                              Icons.lightbulb,
+                              onTap: () {
+                                Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => const DailyTipPage(),
                                   ),
                                 );
-                              },),
-                            
+                              },
+                            ),
                           ],
                         ),
                       ),
@@ -173,15 +232,26 @@ class HomeDashboard extends StatelessWidget {
         ),
         const SizedBox(width: 16),
         ZoomIn(
-          child: CircleAvatar(
-            radius: 24,
-            backgroundColor: Colors.teal[100],
-            child: Text(
-              userName[0].toUpperCase(),
-              style: GoogleFonts.poppins(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal[900],
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => UserProfilePage()),
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Navigating to Profile")),
+              );
+            },
+            child: CircleAvatar(
+              radius: 24,
+              backgroundColor: Colors.teal[100],
+              child: Text(
+                userName[0].toUpperCase(),
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal[900],
+                ),
               ),
             ),
           ),
@@ -286,13 +356,19 @@ class HomeDashboard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  "$completedTasks of 3 tasks completed",
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
-                ),
+                FutureBuilder<int>(
+                  future: fetchCompletedToday(),
+                  builder: (context, snapshot) {
+                    final count = snapshot.data ?? 0;
+                    return Text(
+                      "$count of 5 tasks completed",
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                      ),
+                    );
+                  },
+                )
               ],
             ),
           ),
@@ -311,7 +387,10 @@ class HomeDashboard extends StatelessWidget {
             "🗣️ Speaking Practice",
             "10-minute conversation",
             Icons.mic,
-            () => Navigator.push(context, MaterialPageRoute(builder: (context) => SpeakingPracticePage())),
+            () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => SpeakingPracticePage())),
             "",
           ),
         ),
@@ -322,7 +401,8 @@ class HomeDashboard extends StatelessWidget {
             "📖 Vocabulary Quiz",
             "Learn 10 new words",
             Icons.book,
-            () => Navigator.push(context, MaterialPageRoute(builder: (context) => VocabularyQuizPage())),
+            () => Navigator.push(context,
+                MaterialPageRoute(builder: (context) => VocabularyQuizPage())),
             "Vocabulary tapped!",
           ),
         ),
@@ -333,7 +413,8 @@ class HomeDashboard extends StatelessWidget {
             "✍️ Writing Task",
             "Write a short paragraph",
             Icons.edit,
-            () => Navigator.push(context, MaterialPageRoute(builder: (context) => WritingTaskPage())),
+            () => Navigator.push(context,
+                MaterialPageRoute(builder: (context) => WritingTaskPage())),
             "Writing Task tapped!",
           ),
         ),
@@ -344,13 +425,15 @@ class HomeDashboard extends StatelessWidget {
             "🧠 Flashcards",
             "Review key phrases",
             Icons.style,
-            () => Navigator.push(context, MaterialPageRoute(builder: (context) => FlashcardScreen())),
+            () => Navigator.push(context,
+                MaterialPageRoute(builder: (context) => FlashcardScreen())),
             "Flashcards tapped!",
           ),
         ),
       ],
     );
   }
+
   Widget _taskCard(
     BuildContext context,
     String title,
@@ -419,48 +502,48 @@ class HomeDashboard extends StatelessWidget {
       ),
     );
   }
-  }
+}
 
-  Widget _miniCard(String text, Color bgColor, IconData icon, {VoidCallback? onTap}) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(
-                blurRadius: 6,
-                color: Colors.black12,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: Colors.teal[800], size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  text,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.teal[800],
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
+Widget _miniCard(String text, Color bgColor, IconData icon,
+    {VoidCallback? onTap}) {
+  return Expanded(
+    child: GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(
+              blurRadius: 6,
+              color: Colors.black12,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.teal[800], size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                text,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.teal[800],
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
+    ),
+  );
+}
 
 class WavePainter extends CustomPainter {
   @override

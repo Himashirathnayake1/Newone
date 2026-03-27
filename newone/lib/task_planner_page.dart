@@ -45,7 +45,7 @@ class _TaskPlannerPageState extends State<TaskPlannerPage> {
                   'timestamp': Timestamp.now(),
                   'notificationTime': Timestamp.fromDate(notificationTime),
                 });
-
+                Navigator.pop(context);
                 await NotificationService.scheduleTaskReminderNotification(
                   id: DateTime.now().millisecondsSinceEpoch,
                   title: title,
@@ -136,7 +136,22 @@ class _TaskPlannerPageState extends State<TaskPlannerPage> {
           ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
+      body: Stack(
+  children: [
+    // 🌄 Background Image
+    Positioned.fill(
+      child: Image.asset(
+        'assets/back.jpg',
+        fit: BoxFit.cover,
+      ),
+    ),
+
+    // 🧼 Semi-transparent overlay
+    Positioned.fill(
+      child: Container(
+        color: Colors.white.withOpacity(0.85),
+      ),
+    ),StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('tasks')
             .where('uid', isEqualTo: uid)
@@ -207,11 +222,13 @@ class _TaskPlannerPageState extends State<TaskPlannerPage> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.edit, color: Colors.blue),
+                                icon:
+                                    const Icon(Icons.edit, color: Colors.blue),
                                 onPressed: () => addOrEditTask(doc: task),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
+                                icon:
+                                    const Icon(Icons.delete, color: Colors.red),
                                 onPressed: () => deleteTask(task.id),
                               ),
                             ],
@@ -249,7 +266,7 @@ class _TaskPlannerPageState extends State<TaskPlannerPage> {
             ],
           );
         },
-      ),
+      ),],),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 54.0),
         child: FloatingActionButton(

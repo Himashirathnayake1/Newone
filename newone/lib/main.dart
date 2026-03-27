@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:newone/dashboard.dart';
 import 'package:newone/firebase_options.dart';
 import 'package:newone/login.dart';
 import 'package:newone/notification_service.dart';
@@ -70,22 +72,21 @@ class _MyAppState extends State<MyApp> {
   }
 
   void listenForegroundMessages() {
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print('📥 Received message in foreground: ${message.messageId}');
-    
-    final notification = message.notification;
-    final android = message.notification?.android;
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('📥 Received message in foreground: ${message.messageId}');
 
-    if (notification != null && android != null) {
-      NotificationService.showNotification(
-        id: message.hashCode,
-        title: notification.title ?? 'Notification',
-        body: notification.body ?? '',
-      );
-    }
-  });
-}
+      final notification = message.notification;
+      final android = message.notification?.android;
 
+      if (notification != null && android != null) {
+        NotificationService.showNotification(
+          id: message.hashCode,
+          title: notification.title ?? 'Notification',
+          body: notification.body ?? '',
+        );
+      }
+    });
+  }
 
   void setupInteractedMessage() async {
     // Handle when app is opened from terminated state via a notification
@@ -108,7 +109,6 @@ class _MyAppState extends State<MyApp> {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('seenOnboarding') ?? false;
   }
-  
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +121,16 @@ class _MyAppState extends State<MyApp> {
           if (!snapshot.hasData) {
             return const SizedBox();
           }
-          return snapshot.data! ? LoginScreen() : OnboardingScreen();
+          if (!snapshot.data!) {
+            return OnboardingScreen(); // show onboarding first
+          }
+          // ✅ Check if user is already signed in
+          final user = FirebaseAuth.instance.currentUser;
+          if (user != null) {
+            return HomeDashboard(); // go to dashboard directly
+          } else {
+            return LoginScreen();
+          } // else show login
         },
       ),
     );
