@@ -37,23 +37,38 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
       isLoading = false;
     });
   }
+Future<void> markFlashcardComplete() async {
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  if (uid == null) return;
+
+  final today = DateTime.now().toString().substring(0, 10);
+  final doc = FirebaseFirestore.instance
+      .collection('users')
+      .doc(uid)
+      .collection('progress')
+      .doc(today);
+
+  await doc.set({'flashcards': true}, SetOptions(merge: true));
+}
 
   // ➡️ Next button logic
-  void nextCard() async {
-    if (currentIndex < flashcards.length - 1) {
-      setState(() {
-        currentIndex++;
-      });
-    } else {
-      await _updateProgress(1.0 / flashcards.length);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("🎉 Well done! Progress updated.")),
-      );
-      setState(() {
-        currentIndex = 0;
-      });
-    }
+void nextCard() async {
+  if (currentIndex < flashcards.length - 1) {
+    setState(() {
+      currentIndex++;
+    });
+  } else {
+    await _updateProgress(1.0 / flashcards.length);
+    await markFlashcardComplete(); // ✅ Save task progress
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("🎉 Well done! Progress updated.")),
+    );
+    setState(() {
+      currentIndex = 0;
+    });
   }
+}
+
 
   // 🔄 Update progress in Firestore
   Future<void> _updateProgress(double valueToAdd) async {
@@ -67,8 +82,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
 
     await userDoc.update({'progress': updated});
   }
-
-  @override
+@override
   Widget build(BuildContext context) {
     if (isLoading) {
       return Scaffold(
@@ -92,7 +106,23 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
         backgroundColor: Colors.teal,
       ),
       backgroundColor: const Color(0xFFF9FAFB),
-      body: Padding(
+      body:
+      Stack(
+  children: [
+    // 🌄 Background Image
+    Positioned.fill(
+      child: Image.asset(
+        'assets/back.jpg',
+        fit: BoxFit.cover,
+      ),
+    ),
+
+    // 🧼 Semi-transparent overlay
+    Positioned.fill(
+      child: Container(
+        color: Colors.white.withOpacity(0.85),
+      ),
+    ), Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
@@ -115,7 +145,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
             ),
           ],
         ),
-      ),
+      ),],),
     );
   }
 

@@ -20,7 +20,23 @@ class TaskNotificationsPage extends StatelessWidget {
         title: const Text("🔔 Task Notifications"),
         backgroundColor: Colors.teal,
       ),
-      body: StreamBuilder<QuerySnapshot>(
+      body:Stack(
+  children: [
+    // 🌄 Background Image
+    Positioned.fill(
+      child: Image.asset(
+        'assets/back.jpg',
+        fit: BoxFit.cover,
+      ),
+    ),
+
+    // 🧼 Semi-transparent overlay
+    Positioned.fill(
+      child: Container(
+        color: Colors.white.withOpacity(0.85),
+      ),
+    ),
+       StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('tasks')
             .where('uid', isEqualTo: uid)
@@ -80,7 +96,7 @@ class TaskNotificationsPage extends StatelessWidget {
             },
           );
         },
-      ),
+      ),]),
     );
   }
 }

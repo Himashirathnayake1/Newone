@@ -21,17 +21,17 @@ class OnboardingScreen extends StatelessWidget {
         PageViewModel(
           title: "Rishaf's English Learning App",
           body: "Practice real-life English—speaking, listening, reading, and writing—all in one place.",
-          image: Center(child: Image.asset("assets/OIP.jpg", height: 250)),
+          image: Center(child: Image.asset("assets/OIP.png", height: 250)),
         ),
         PageViewModel(
           title: "Learn Together, Grow Faster",
           body: "Join live discussions, explore music and stories, and connect with a global community.",
-          image: Center(child: Image.asset("assets/OIP.jpg", height: 250)),
+          image: Center(child: Image.asset("assets/OIP.png", height: 250)),
         ),
         PageViewModel(
           title: "Are you ready to embark on a transformative journey?",
           body: "Sign up and join a global community of learners.",
-          image: Center(child: Image.asset("assets/OIP.jpg", height: 250)),
+          image: Center(child: Image.asset("assets/OIP.png", height: 250)),
         ),
       ],
       onDone: () => goToLogin(context),
